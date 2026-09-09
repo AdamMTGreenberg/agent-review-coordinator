@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "default_branch": "main",
+  "target_branches": ["main"],
+  "ci_workflow": "ci.yml",
+  "watchdog_workflow": "review-watchdog.yml",
+  "classifier_job": "Classify changed files",
+  "instructions": ["AGENTS.md"],
+  "protected_paths": [".github/"],
+  "validation_commands": [["uv", "run", "pytest", "-q"]]
+}

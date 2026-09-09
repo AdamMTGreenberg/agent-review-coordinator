@@ -1,0 +1,28 @@
+name: Agent review coordinator
+description: Check a local review lease or release explicitly deferred CI runs
+inputs:
+  mode:
+    description: admission or recover
+    required: true
+  control-comment:
+    description: Owner-authored control comment ID from REVIEW_CONTROL_COMMENT
+    required: false
+    default: ''
+  github-token:
+    description: Caller token with issues read; recovery also needs actions write and pull requests read
+    required: true
+outputs:
+  deferred:
+    description: true only when a fresh lease defers this PR snapshot
+    value: ${{ steps.coordinator.outputs.deferred }}
+runs:
+  using: composite
+  steps:
+    - id: coordinator
+      shell: bash
+      env:
+        COORDINATOR_SOURCE: ${{ github.action_path }}
+        COORDINATOR_MODE: ${{ inputs.mode }}
+        REVIEW_CONTROL_COMMENT: ${{ inputs.control-comment }}
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: python3 -I "$COORDINATOR_SOURCE/action_runner.py"

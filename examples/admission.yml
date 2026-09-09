@@ -1,0 +1,13 @@
+# Insert these steps before builds/tests in a job required by your CI gates.
+# Caller permissions: contents: read, issues: read.
+steps:
+  - name: Check local review lease
+    id: review
+    uses: AdamMTGreenberg/agent-review-coordinator@COMMIT_SHA
+    with:
+      mode: admission
+      control-comment: ${{ vars.REVIEW_CONTROL_COMMENT }}
+      github-token: ${{ github.token }}
+  - name: Hold CI for local review
+    if: steps.review.outputs.deferred == 'true'
+    run: exit 75
