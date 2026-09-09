@@ -277,3 +277,31 @@ def test_author_metadata_accepts_github_crlf_and_rejects_duplicates():
     )
     with pytest.raises(ValueError, match="exactly one"):
         review.route_author(state, "Review-Author: codex\r\nReview-Author: claude\r\n")
+
+
+def test_commit_hook_cannot_publish_an_unreviewed_tree(service, pr, monkeypatch):
+    state = initial_state()
+    service.state["prs"]["42"] = state
+    calls = []
+
+    def command(args, **kwargs):
+        calls.append(args)
+        if args[1:3] == ["rev-parse", "HEAD"]:
+            return HEAD
+        if args[1] == "status":
+            return " M file.txt"
+        if args[1:3] == ["diff", "--cached"] and "--name-only" in args:
+            return "file.txt"
+        if args[1] == "write-tree":
+            return "reviewed-tree"
+        if args[1:3] == ["rev-parse", "HEAD^{tree}"]:
+            return "hook-modified-tree"
+        return ""
+
+    monkeypatch.setattr(review, "command", command)
+    monkeypatch.setattr(review, "api", lambda *args: pr)
+    monkeypatch.setattr(service, "run_agent", lambda *args: approve())
+    with pytest.raises(RuntimeError, match="Commit hooks changed reviewed source"):
+        service.turn(pr, state)
+    assert not any(args[1] == "push" for args in calls)
+    assert state["approvals"] == {}

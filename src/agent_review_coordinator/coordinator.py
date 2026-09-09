@@ -484,6 +484,7 @@ class Coordinator:
                     "Agent edited protected review/spec files; manual review needed"
                 )
             command(["git", "diff", "--cached", "--check"], cwd=tree)
+            reviewed_tree = command(["git", "write-tree"], cwd=tree)
             command(
                 [
                     "git",
@@ -497,6 +498,10 @@ class Coordinator:
                 cwd=tree,
                 timeout=300,
             )
+            if command(["git", "rev-parse", "HEAD^{tree}"], cwd=tree) != reviewed_tree:
+                raise RuntimeError(
+                    "Commit hooks changed reviewed source; preserved for manual review"
+                )
             head = command(["git", "rev-parse", "HEAD"], cwd=tree)
             state["publication"] = {
                 "input": pr["head"]["sha"],
